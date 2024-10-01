@@ -49,6 +49,7 @@ class CILP:
         print(f"Loaded {len(examples_dict['pos'])} pos examples")
         print(f"Loaded {len(examples_dict['neg'])} neg examples")
 
+        bcp_features = None
         bcp_examples = examples_dict['pos'] + examples_dict['neg']
         labels = np.concatenate([[1] * len(examples_dict['pos']), [0] * len(examples_dict['neg'])])
         
