@@ -41,7 +41,8 @@ class CILP:
 
     def featurise(self):
         #if self.use_semi_prop:
-        examples_dict = load_json(pjoin(self.dataset, f'bc_filtered_{self.rate}.json'))
+        bc_file = pjoin(self.dataset, f'bc_filtered_{self.rate}.json') if self.rate < 1 else pjoin(self.dataset, f'bc_filtered.json')
+        examples_dict = load_json(bc_file) 
         #else: 
         #examples_dict = load_json(pjoin(self.dataset, 'bc_0.1.json'))
 

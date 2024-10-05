@@ -107,7 +107,6 @@ def set_feats(bcp_features, bcp_example):
 def get_features(bcp_examples, n_positives, n_negatives, bcp_features=None):
 
     if bcp_features is None:
-        KSOAKSOPAKSOPA
         bcp_features = list(set(itertools.chain.from_iterable(bcp_examples)))
         bcp_features = sorted(bcp_features)
 

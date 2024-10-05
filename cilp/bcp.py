@@ -10,10 +10,13 @@ from .utils import aleph_settings, create_script, load_examples, run_aleph, pjoi
 
 def run_bcp(dataset, rate, cached=True, print_output=False):
     print('Running BCP')
-    bc_file = pjoin(dataset, f'bc_{rate}.json')
+    bc_file = pjoin(dataset, f'bc_{rate}.json') if rate < 1 else pjoin(dataset, f'bc.json')
     if osp.exists(bc_file) and cached:
         print('BCP: Loading from cache')
-        return load_json(pjoin(dataset, f'bc_{rate}.json'))
+        if rate < 1:
+            return load_json(pjoin(dataset, f'bc_{rate}.json'))
+        else:
+            return load_json(bc_file)
 
     bottom_clauses = {}
     for posneg in ['pos', 'neg']:

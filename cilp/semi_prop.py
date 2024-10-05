@@ -57,13 +57,14 @@ def build_first_order_features(rules: list, global_variables: list, features: di
 
 def run_semi_prop(data_dir: str, arity: int, rate:float, cached=True, print_output=False) -> list:
     print('Semi-Prop: Running Semi-Prop')
-    bc_file = pjoin(data_dir, f'bc_filtered_{rate}.json')
+    bc_file = pjoin(data_dir, f'bc_filtered_{rate}.json') if rate < 1 else pjoin(data_dir, f'bc_filtered.json')
     features_file = pjoin(data_dir, 'features.json')
     if osp.exists(bc_file) and cached:
         print('Loading from cache')
         return 
     else:
-        bottom_clauses = load_json(pjoin(data_dir, f'bc_{rate}.json'))
+        file = pjoin(data_dir, f'bc_{rate}.json') if rate < 1 else pjoin(data_dir, f'bc.json')
+        bottom_clauses = load_json(file)
 
     global_variables = list(map(chr, range(ord('A'), ord('A')+arity)))
     

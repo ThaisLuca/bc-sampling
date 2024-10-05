@@ -3,7 +3,7 @@ import os
 import re
 import argparse
 from cilp import CILP, utils
-from experiments import experiments, bk
+from experiments import bk
 from split_folds import get_dataset
 from sampling import Sampling
 import pandas as pd
@@ -16,101 +16,124 @@ TRAINING = 0
 VALIDATION = 1
 TESTING = 2
 
-RATE = 0.1
 sampling = Sampling()
 
 def main(args):
-    params = {
-        'mlp_params': {
-            'hidden_sizes': [2],
-            'activation': 'Sigmoid'
-        },
-        'optim': 'Adam',
-        'optim_params': {
-            'lr': 0.01,
-            'amsgrad': False
-        },
-        'batch_size': 32,
-        'data_dir': args.data_dir,
-    }
 
-    source = args.data_dir.split('/')[1]
+    for rate in [0.01, 0.1, 0.2, 0.3, 1]:
 
-    src_train_facts, src_train_pos, src_train_neg = get_dataset(source, args.target, bk, TRAINING)
-    training_set = [src_train_facts, src_train_pos, src_train_neg]
-    del src_train_facts, src_train_pos, src_train_neg
+        params = {
+            'mlp_params': {
+                'hidden_sizes': [2],
+                'activation': 'Sigmoid'
+            },
+            'optim': 'Adam',
+            'optim_params': {
+                'lr': 0.01,
+                'amsgrad': False
+            },
+            'batch_size': 32,
+            'data_dir': args.data_dir,
+        }
 
-    src_val_facts, src_val_pos, src_val_neg = get_dataset(source, args.target, bk, VALIDATION)
-    validation_set = [src_val_facts, src_val_pos, src_val_neg]
-    del src_val_facts, src_val_pos, src_val_neg
+        args.rate = rate
 
-    src_test_facts, src_test_pos, src_test_neg = get_dataset(source, args.target, bk, TESTING)
-    test_set = [src_test_facts, src_test_pos, src_test_neg]
-    del src_test_facts, src_test_pos, src_test_neg
+        source = args.data_dir.split('/')[1]
 
-    training_set[POS] = sampling.random(training_set[POS], rate=RATE)
-    training_set[NEG] = sampling.random(training_set[NEG], rate=RATE)
+        print(f"Executing experiment for {source} and rate {args.rate}")
 
-    dataset_path = f"{args.data_dir}"
-    if not os.path.isdir(dataset_path + '/train'): os.makedirs(dataset_path + '/train')
-    if not os.path.isdir(dataset_path + '/validation'): os.makedirs(dataset_path + '/validation')
-    if not os.path.isdir(dataset_path + '/test'): os.makedirs(dataset_path + '/test')
+        print("Training")
+        src_train_facts, src_train_pos, src_train_neg = get_dataset(source, args.target, bk, TRAINING)
+        training_set = [src_train_facts, src_train_pos, src_train_neg]
+        del src_train_facts, src_train_pos, src_train_neg
 
-    utils.write_examples(training_set[FACTS], f'{dataset_path}/train/bk.pl', end_of_line='')
-    utils.write_examples(training_set[POS], f'{dataset_path}/train/pos.pl', end_of_line='')
-    utils.write_examples(training_set[NEG], f'{dataset_path}/train/neg.pl', end_of_line='')
+        print("Validation")
+        src_val_facts, src_val_pos, src_val_neg = get_dataset(source, args.target, bk, VALIDATION)
+        validation_set = [src_val_facts, src_val_pos, src_val_neg]
+        del src_val_facts, src_val_pos, src_val_neg
 
-    utils.write_examples(validation_set[FACTS], f'{dataset_path}/validation/bk.pl', end_of_line='')
-    utils.write_examples(validation_set[POS], f'{dataset_path}/validation/pos.pl', end_of_line='')
-    utils.write_examples(validation_set[NEG], f'{dataset_path}/validation/neg.pl', end_of_line='')
 
-    utils.write_examples(test_set[FACTS], f'{dataset_path}/test/bk.pl', end_of_line='')
-    utils.write_examples(test_set[POS], f'{dataset_path}/test/pos.pl', end_of_line='')
-    utils.write_examples(test_set[NEG], f'{dataset_path}/test/neg.pl', end_of_line='')
+        print("Testing")
+        src_test_facts, src_test_pos, src_test_neg = get_dataset(source, args.target, bk, TESTING)
+        test_set = [src_test_facts, src_test_pos, src_test_neg]
+        del src_test_facts, src_test_pos, src_test_neg
 
-    model = CILP(dataset_path + '/train',
-                rate=RATE,
-                use_semi_prop=True,
-                h_arity=2)
-    
-    bottom_clauses = model.init_data()
+        if args.rate < 1:
+            training_set[POS] = sampling.random(training_set[POS], rate=args.rate)
+            training_set[NEG] = sampling.random(training_set[NEG], rate=args.rate)
 
-    sorted(training_set[FACTS])
-    
-    #global_vars, local_vars = [], []
-    '''for posneg in ['pos', 'neg']:
-        for bc in bottom_clauses[posneg]:
-            bc_sorted = []
-            for literal in bc:
-                variables = re.search(r'\((.*?)\)', literal).group(1).split(",")
-                if any(var in ["A", "B"] and var.isalpha() for var in variables):
-                    global_vars.append(literal)
-                else:
-                    local_vars.append(literal)
-            bc_sorted = global_vars + local_vars
-            rule = experiment['predicate'] + '(A,B) :- ' + ','.join(bc) + '.\n'
-            training_set[FACTS].append(rule)'''
+        dataset_path = f"{args.data_dir}"
+        if not os.path.isdir(dataset_path + '/train'): os.makedirs(dataset_path + '/train')
+        if not os.path.isdir(dataset_path + '/validation'): os.makedirs(dataset_path + '/validation')
+        if not os.path.isdir(dataset_path + '/test'): os.makedirs(dataset_path + '/test')
 
-    train_metrics, bnb = model.train()
+        utils.write_examples(training_set[FACTS], f'{dataset_path}/train/bk.pl', end_of_line='')
+        utils.write_examples(training_set[POS], f'{dataset_path}/train/pos.pl', end_of_line='')
+        utils.write_examples(training_set[NEG], f'{dataset_path}/train/neg.pl', end_of_line='')
 
-    # Validation
-    model = CILP(dataset_path + '/validation',
-                rate=RATE,
-                use_semi_prop=True,
-                h_arity=2)
-    
-    bottom_clauses = model.init_data()
+        utils.write_examples(validation_set[FACTS], f'{dataset_path}/validation/bk.pl', end_of_line='')
+        utils.write_examples(validation_set[POS], f'{dataset_path}/validation/pos.pl', end_of_line='')
+        utils.write_examples(validation_set[NEG], f'{dataset_path}/validation/neg.pl', end_of_line='')
 
-    validation_metrics = model.test(bnb)
+        utils.write_examples(test_set[FACTS], f'{dataset_path}/test/bk.pl', end_of_line='')
+        utils.write_examples(test_set[POS], f'{dataset_path}/test/pos.pl', end_of_line='')
+        utils.write_examples(test_set[NEG], f'{dataset_path}/test/neg.pl', end_of_line='')
 
-    # Save results
-    log_path = f"{args.log_dir}"
-    if not os.path.isdir(log_path + '/train'): os.makedirs(log_path + '/train')
-    if not os.path.isdir(log_path + '/validation'): os.makedirs(log_path + '/validation')
-    if not os.path.isdir(log_path + '/test'): os.makedirs(log_path + '/test')
+        model = CILP(dataset_path + '/train',
+                    rate=args.rate,
+                    use_semi_prop=True,
+                    h_arity=2)
+        
+        bottom_clauses = model.init_data()
 
-    pd.Series(train_metrics).to_json(f"{log_path}/train/metrics_{RATE}.json")
-    
+        sorted(training_set[FACTS])
+        
+        #global_vars, local_vars = [], []
+        '''for posneg in ['pos', 'neg']:
+            for bc in bottom_clauses[posneg]:
+                bc_sorted = []
+                for literal in bc:
+                    variables = re.search(r'\((.*?)\)', literal).group(1).split(",")
+                    if any(var in ["A", "B"] and var.isalpha() for var in variables):
+                        global_vars.append(literal)
+                    else:
+                        local_vars.append(literal)
+                bc_sorted = global_vars + local_vars
+                rule = experiment['predicate'] + '(A,B) :- ' + ','.join(bc) + '.\n'
+                training_set[FACTS].append(rule)'''
+
+        train_metrics, bnb = model.train()
+
+        # Validation
+        model = CILP(dataset_path + '/validation',
+                    rate=args.rate,
+                    use_semi_prop=True,
+                    h_arity=2)
+        
+        bottom_clauses = model.init_data()
+
+        validation_metrics = model.test(bnb)
+
+        # Test
+        model = CILP(dataset_path + '/test',
+                    rate=args.rate,
+                    use_semi_prop=True,
+                    h_arity=2)
+        
+        bottom_clauses = model.init_data()
+
+        test_metrics = model.test(bnb)
+
+        # Save results
+        log_path = f"{args.log_dir}"
+        if not os.path.isdir(log_path + '/train'): os.makedirs(log_path + '/train')
+        if not os.path.isdir(log_path + '/validation'): os.makedirs(log_path + '/validation')
+        if not os.path.isdir(log_path + '/test'): os.makedirs(log_path + '/test')
+
+        pd.Series(train_metrics).to_json(f"{log_path}/train/metrics_{args.rate}.json")
+        pd.Series(validation_metrics).to_json(f"{log_path}/validation/metrics_{args.rate}.json")
+        pd.Series(test_metrics).to_json(f"{log_path}/test/metrics_{args.rate}.json")
+        
 if __name__ == '__main__':
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument('--log-dir', nargs='?', default='logs/imdb')
@@ -127,6 +150,7 @@ if __name__ == '__main__':
     PARSER.add_argument('--n-splits', type=int, default=5)
     PARSER.add_argument('--use-semi-prop', action='store_true') 
     PARSER.add_argument('--h-arity', type=int, default=2)
+    PARSER.add_argument('--rate', type=float, default=0.01)
     #PARSER.add_argument('--test', action='store_true')
     #PARSER.add_argument('--sampling-rate', type=int, default=100) 
 
