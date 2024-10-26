@@ -1,6 +1,7 @@
 
 import os
 import re
+import math
 import argparse
 from cilp import CILP, utils
 from experiments import bk
@@ -20,7 +21,7 @@ sampling = Sampling()
 
 def main(args):
 
-    for rate in [0.01, 0.1, 0.2, 0.3, 1]:
+    for rate in [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1]:
 
         params = {
             'mlp_params': {
@@ -37,24 +38,24 @@ def main(args):
         }
 
         args.rate = rate
+        n_folds = args.n_splits
 
         source = args.data_dir.split('/')[1]
 
         print(f"Executing experiment for {source} and rate {args.rate}")
 
         print("Training")
-        src_train_facts, src_train_pos, src_train_neg = get_dataset(source, args.target, bk, TRAINING)
+        src_train_facts, src_train_pos, src_train_neg = get_dataset(source, args.target, bk, n_folds, TRAINING)
         training_set = [src_train_facts, src_train_pos, src_train_neg]
         del src_train_facts, src_train_pos, src_train_neg
 
         print("Validation")
-        src_val_facts, src_val_pos, src_val_neg = get_dataset(source, args.target, bk, VALIDATION)
+        src_val_facts, src_val_pos, src_val_neg = get_dataset(source, args.target, bk, n_folds, VALIDATION)
         validation_set = [src_val_facts, src_val_pos, src_val_neg]
         del src_val_facts, src_val_pos, src_val_neg
 
-
         print("Testing")
-        src_test_facts, src_test_pos, src_test_neg = get_dataset(source, args.target, bk, TESTING)
+        src_test_facts, src_test_pos, src_test_neg = get_dataset(source, args.target, bk, n_folds, TESTING)
         test_set = [src_test_facts, src_test_pos, src_test_neg]
         del src_test_facts, src_test_pos, src_test_neg
 
