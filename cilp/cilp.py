@@ -2,6 +2,7 @@
 from collections import defaultdict
 from os import path as osp
 
+import time
 import numpy as np
 
 from .bcp import run_bcp
@@ -14,6 +15,7 @@ class CILP:
     def __init__(self,
                  dataset,
                  rate,
+                 run,
                  dedup=False,
                  cached=True,
                  use_gpu=True,
@@ -23,6 +25,7 @@ class CILP:
                  h_arity=None):
         self.dataset = dataset
         self.rate = rate
+        self.run = run
         self.use_semi_prop = use_semi_prop
         self.h_arity = h_arity
         self.dedup = dedup
@@ -55,8 +58,8 @@ class CILP:
         labels = np.concatenate([[1] * len(examples_dict['pos']), [0] * len(examples_dict['neg'])])
         
         feats_file = pjoin(self.dataset, f'feats_{self.rate}.npz')
-        if osp.exists(feats_file) and self.cached:
-            print('Featurise: Loading from cache')
+        if osp.exists(feats_file) and self.cached and 'train' in self.dataset.split('/')[-1]:
+            print('Featurise: Loading from cache - training')
             npzfile = np.load(feats_file)
             examples = npzfile['examples']
             bcp_features = npzfile['bcp_features']
@@ -64,15 +67,20 @@ class CILP:
 
         else:
             if self.dataset.split('/')[-1] in ['validation', 'test']:
-                dir = '/'.join(self.dataset.split('/')[:2]) + '/train'
+                dir = '/'.join(self.dataset.split('/')[:2]) + f'/train_{self.run}'
                 feats_file = pjoin(dir, f'feats_{self.rate}.npz')
+                #print('Creating features for validation or test set')
 
                 npzfile = np.load(feats_file)
                 examples = bcp_examples
                 bcp_features = npzfile['bcp_features']
                 self.n_features = len(bcp_features)
 
+
+            start_time = time.time()
             examples, bcp_features = get_features(bcp_examples, n_positives_examples, n_negative_examples, bcp_features)
+            time_elapsed = time.time() - start_time
+            print(f'Featurise done, took {time_elapsed:.1f} parsing output...')
             #examples = mrmr(examples, n_positives_examples, n_negative_examples, features_rate=0.1)
             np.savez(pjoin(self.dataset, f'feats_{self.rate}.npz'), examples=examples, bcp_features=bcp_features)
 
@@ -86,7 +94,7 @@ class CILP:
         data = np.concatenate([y, X], axis=1)
         u_data = np.unique(data, axis=0)
         print(f'Unique: {u_data.shape[0]}')
-
+        
         if self.dedup:
             y = u_data[:, 0:1]
             X = u_data[:, 1:]
@@ -109,7 +117,12 @@ class CILP:
         #bnb = BernoulliNB()
         #bnb = ComplementNB(force_alpha=True)
         bnb = MultinomialNB()
-        y_pred = bnb.fit(self.X, self.y).predict_proba(self.X)
+        
+        start_time = time.time()
+        model = bnb.fit(self.X, self.y)
+        time_elapsed = time.time() - start_time
+        print(f'NB done, took {time_elapsed:.1f} parsing output...')
+        y_pred = model.predict_proba(self.X)
         metrics.update({'classes': bnb.classes_})
         metrics.update({'proba': y_pred})
         metrics.update({'score': bnb.score(self.X, self.y)})

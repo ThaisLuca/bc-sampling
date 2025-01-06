@@ -101,7 +101,7 @@ inf(1e10).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A L E P H
 
-
+set(max_features,6).
 aleph_version(5).
 aleph_version_date('Sun Mar 11 03:25:37 UTC 2007').
 aleph_manual('http://www.comlab.ox.ac.uk/oucl/groups/machlearn/Aleph/index.html').
