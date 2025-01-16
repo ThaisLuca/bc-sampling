@@ -9,6 +9,7 @@ from .bcp import run_bcp
 from .semi_prop import run_semi_prop
 from .utils import get_features, load_json, pjoin
 from sklearn.naive_bayes import BernoulliNB, ComplementNB, MultinomialNB
+from sklearn.neural_network import MLPClassifier
 
 
 class CILP:
@@ -111,23 +112,39 @@ class CILP:
         self.semi_prop()
         self.featurise()
 
-    def train(self):
+    def train(self, nb=True):
 
         metrics = defaultdict(list)
         #bnb = BernoulliNB()
         #bnb = ComplementNB(force_alpha=True)
-        bnb = MultinomialNB()
-        
-        start_time = time.time()
-        model = bnb.fit(self.X, self.y)
-        time_elapsed = time.time() - start_time
-        print(f'NB done, took {time_elapsed:.1f} parsing output...')
-        y_pred = model.predict_proba(self.X)
-        metrics.update({'classes': bnb.classes_})
-        metrics.update({'proba': y_pred})
-        metrics.update({'score': bnb.score(self.X, self.y)})
 
-        return metrics, bnb
+        if nb:
+            algo = MultinomialNB()
+
+            start_time = time.time()
+            model = algo.fit(self.X, self.y)
+            time_elapsed = time.time() - start_time
+
+            print(f'NB done, took {time_elapsed:.1f} parsing output...')
+
+            y_pred = model.predict_proba(self.X)
+        else:
+            #algo = MLPClassifier(solver='sgd', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
+            algo = MLPClassifier(solver='sgd', hidden_layer_sizes=(self.X.shape[0]))
+
+            start_time = time.time()
+            model = algo.fit(self.X, self.y)
+            time_elapsed = time.time() - start_time
+
+            print(f'NN done, took {time_elapsed:.1f} parsing output...')
+
+            y_pred = model.predict(self.X)
+        
+        metrics.update({'classes': algo.classes_})
+        metrics.update({'proba': y_pred})
+        metrics.update({'score': algo.score(self.X, self.y)})
+
+        return metrics, algo
     
     def test(self, model):
         metrics = defaultdict(list)
