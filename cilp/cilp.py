@@ -130,7 +130,17 @@ class CILP:
             y_pred = model.predict_proba(self.X)
         else:
             #algo = MLPClassifier(solver='sgd', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
-            algo = MLPClassifier(solver='sgd', hidden_layer_sizes=(self.X.shape[0]))
+            algo = MLPClassifier(solver='adam', activation='tanh', hidden_layer_sizes=(self.X.shape[0]))
+            #algo = MLPClassifier(solver='adam', hidden_layer_sizes=(100,))
+
+            #[[1.]
+            #[0.]
+            #[0.]]
+
+            # Parse ground truth
+            # rel(A,B) == 1
+            # not rel((A,B)) == 0 
+            self.y = [[1, 0] if y[0] == 0 else [0, 1] for y in self.y]
 
             start_time = time.time()
             model = algo.fit(self.X, self.y)
@@ -142,7 +152,7 @@ class CILP:
         
         metrics.update({'classes': algo.classes_})
         metrics.update({'proba': y_pred})
-        metrics.update({'score': algo.score(self.X, self.y)})
+        #metrics.update({'score': algo.score(self.X, self.y)})
 
         return metrics, algo
     
@@ -153,6 +163,6 @@ class CILP:
         y_pred = model.predict_proba(self.X)
         metrics.update({'classes': model.classes_})
         metrics.update({'proba': y_pred})
-        metrics.update({'score': model.score(self.X, self.y)})
+        #metrics.update({'score': model.score(self.X, self.y)})
 
         return metrics
