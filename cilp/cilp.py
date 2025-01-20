@@ -148,7 +148,7 @@ class CILP:
 
             print(f'NN done, took {time_elapsed:.1f} parsing output...')
 
-            y_pred = model.predict(self.X)
+            y_pred = model.predict_proba(self.X)
         
         metrics.update({'classes': algo.classes_})
         metrics.update({'proba': y_pred})

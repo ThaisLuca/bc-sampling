@@ -18,7 +18,9 @@ TRAINING = 0
 VALIDATION = 1
 TESTING = 2
 
-N_RUNS = 1
+N_RUNS = 5
+
+nb = False
 
 sampling = Sampling()
 
@@ -122,7 +124,7 @@ def main(args):
                     rule = experiment['predicate'] + '(A,B) :- ' + ','.join(bc) + '.\n'
                     training_set[FACTS].append(rule)'''
 
-            train_metrics, bnb = model.train()
+            train_metrics, bnb = model.train(nb=nb)
 
             # Validation
             start = time.time()
@@ -158,9 +160,14 @@ def main(args):
             if not os.path.isdir(log_path + '/validation'): os.makedirs(log_path + '/validation')
             if not os.path.isdir(log_path + '/test'): os.makedirs(log_path + '/test')
 
-            pd.Series(train_metrics).to_json(f"{log_path}/train/metrics_{args.rate}.json")
-            pd.Series(validation_metrics).to_json(f"{log_path}/validation/metrics_{args.rate}.json")
-            pd.Series(test_metrics).to_json(f"{log_path}/test/metrics_{args.rate}.json")
+            if nb:
+                pd.Series(train_metrics).to_json(f"{log_path}/train/metrics_{args.rate}.json")
+                pd.Series(validation_metrics).to_json(f"{log_path}/validation/metrics_{args.rate}.json")
+                pd.Series(test_metrics).to_json(f"{log_path}/test/metrics_{args.rate}.json")
+            else:
+                pd.Series(train_metrics).to_json(f"{log_path}/train/metrics_{args.rate}_nn.json")
+                pd.Series(validation_metrics).to_json(f"{log_path}/validation/metrics_{args.rate}_nn.json")
+                pd.Series(test_metrics).to_json(f"{log_path}/test/metrics_{args.rate}_nn.json")
     
     pd.Series(timestamps).to_json(f"{dataset_path}/timestamps.json")
         
