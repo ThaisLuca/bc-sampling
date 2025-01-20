@@ -130,7 +130,7 @@ class CILP:
             y_pred = model.predict_proba(self.X)
         else:
             #algo = MLPClassifier(solver='sgd', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
-            algo = MLPClassifier(solver='adam', activation='tanh', hidden_layer_sizes=(self.X.shape[0]))
+            algo = MLPClassifier(solver='adam', activation='tanh', max_iter=300, early_stopping=True, hidden_layer_sizes=(self.X.shape[0]))
             #algo = MLPClassifier(solver='adam', hidden_layer_sizes=(100,))
 
             #[[1.]
